@@ -37,25 +37,36 @@ def train_model(model, dataset, epochs, checkpoint_prefix):
 
     model.compile(optimizer='adam', loss=loss)
 
-    # todo save best only
-    checkpoint_callback=tf.keras.callbacks.ModelCheckpoint(
+    checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
         filepath=checkpoint_prefix,
         save_weights_only=True,
         save_best_only=True,
         monitor='loss') # TODO monitor val_loss instead
 
-    return model.fit(dataset, epochs=epochs, callbacks=[checkpoint_callback])
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=1)
 
-def build_model(vocab_size, embedding_dim, rnn_units, batch_size):
-    model = tf.keras.Sequential([
-        tf.keras.layers.Embedding(vocab_size, embedding_dim,
-                                batch_input_shape=[batch_size, None]),
-        tf.keras.layers.GRU(rnn_units,
-                            return_sequences=True,
-                            stateful=True,
-                            recurrent_initializer='glorot_uniform'),
-        tf.keras.layers.Dense(vocab_size)
-    ])
+    return model.fit(dataset, epochs=epochs, callbacks=[checkpoint_callback, early_stopping])
+
+def build_model(vocab_size, embedding_dim, rnn_units, batch_size, use_LSTM=False):
+    model = tf.keras.Sequential()
+
+    if embedding_dim != None:
+        model.add(tf.keras.layers.Embedding(vocab_size, embedding_dim,
+                                            batch_input_shape=[batch_size, None]))
+    else: # use one-hot encoding instead of embedding layer
+        def one_hot(x):
+            return tf.one_hot(tf.cast(x, 'uint8'), depth=vocab_size)
+        model.add(tf.keras.layers.Lambda(one_hot, batch_input_shape=[batch_size,None]))
+
+    # recurrent layer
+    if use_LSTM:
+        model.add(tf.keras.layers.LSTM(rnn_units, return_sequences=True, stateful=True))
+    else:
+        model.add(tf.keras.layers.SimpleRNN(rnn_units, return_sequences=True, stateful=True))
+
+    # output layer
+    model.add(tf.keras.layers.Dense(vocab_size))
+
     return model
 
 def generate_text(model, char_to_idx, idx_to_char,

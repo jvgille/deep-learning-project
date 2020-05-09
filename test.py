@@ -5,13 +5,15 @@ import numpy as np
 
 from util import generate_text, build_model, train_model, preprocess
 
+tf.random.set_seed(0)
+
 filename = 'shakespeare'
 
-epochs = 1
+epochs = 20
 batch_size = 64
 seq_length = 100
 rnn_units = 128 # 1024
-embedding_dim = 256
+embedding_dim = None # 256
 
 dataset, idx_to_char, char_to_idx, vocab = preprocess(filename, batch_size, seq_length)
 
@@ -26,10 +28,10 @@ model = build_model(vocab_size, embedding_dim, rnn_units, batch_size)
 history = train_model(model, dataset, epochs=epochs, checkpoint_prefix=checkpoint_prefix)
 
 ### Generate sample (comment out if only training)
-model = build_model(vocab_size, embedding_dim, rnn_units, batch_size=1)
-model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
-model.build(tf.TensorShape([1, None]))
-print(generate_text(model,char_to_idx,idx_to_char,
-                    start_string=u"Somebody"))
+#model = build_model(vocab_size, embedding_dim, rnn_units, batch_size=1)
+#model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
+#model.build(tf.TensorShape([1, None]))
+#print(generate_text(model,char_to_idx,idx_to_char,
+#                    start_string=u"Romeo:\n"))
 
 
